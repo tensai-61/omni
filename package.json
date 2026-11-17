@@ -1,0 +1,16 @@
+{
+  "name": "turnuva-yapma-programi",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.15",
+    "nodemailer": "^10.1.2"
+  }
+}

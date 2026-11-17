@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: omni
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22.14.0"
+      - key: NODE_ENV
+        value: production
+      - key: OMNI_HOSTED
+        value: "1"
+      - key: HOST
+        value: 0.0.0.0
+      - key: TRUST_PROXY
+        value: "1"
+      - key: ONLINE_LOCK_TRIGGER
+        value: "0"
+      - key: COOKIE_SECURE
+        value: always
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM_EMAIL
+        sync: false
+      - key: MAIL_FROM_NAME
+        sync: false
+      - key: STARTING_OMNI_DOLAR
+        sync: false
+      - key: OMNI_MATCH_WIN_REWARD
+        sync: false
+      - key: MARKET_MIN_PER_GEN
+        sync: false
+      - key: MARKET_MAX_PER_GEN
+        sync: false

@@ -44,6 +44,8 @@ const defaultBodyLimit = 1 * 1024 * 1024;
 const accountDataBodyLimit = 20 * 1024 * 1024;
 const sessionLifetime = 30 * 24 * 60 * 60 * 1000;
 const verificationLifetime = 10 * 60 * 1000;
+const passwordResetLifetime = 30 * 60 * 1000;
+const maxPasswordResetEmailsPerHour = 3;
 const verificationResendDelay = 60 * 1000;
 const maxVerificationEmailsPerHour = 5;
 const maxVerificationAttempts = 5;
@@ -181,6 +183,18 @@ database.exec(`
     failures INTEGER NOT NULL DEFAULT 0 CHECK (failures >= 0 AND failures <= 5),
     locked_until INTEGER
   );
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS password_reset_tokens_user ON password_reset_tokens(user_id);
+  CREATE TABLE IF NOT EXISTS password_reset_sends (
+    id INTEGER PRIMARY KEY,
+    email TEXT NOT NULL COLLATE NOCASE,
+    sent_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS password_reset_sends_email_sent ON password_reset_sends(email, sent_at);
 `);
 
 const userColumns = new Set(database.prepare('PRAGMA table_info(users)').all().map(column => column.name));
@@ -365,6 +379,15 @@ const writeUserData = database.prepare(`
   ON CONFLICT(user_id) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at
 `);
 const deleteSession = database.prepare('DELETE FROM user_sessions WHERE token_hash = ?');
+const insertPasswordResetToken = database.prepare('INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)');
+const readPasswordResetToken = database.prepare('SELECT token_hash, user_id, expires_at FROM password_reset_tokens WHERE token_hash = ?');
+const deletePasswordResetToken = database.prepare('DELETE FROM password_reset_tokens WHERE token_hash = ?');
+const deletePasswordResetTokensForUser = database.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?');
+const purgeExpiredPasswordResetTokens = database.prepare('DELETE FROM password_reset_tokens WHERE expires_at <= ?');
+const updateUserPassword = database.prepare('UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?');
+const passwordResetSendCounts = database.prepare('SELECT COUNT(*) AS hourly FROM password_reset_sends WHERE sent_at > ? AND email = ? COLLATE NOCASE');
+const insertPasswordResetSend = database.prepare('INSERT INTO password_reset_sends (email, sent_at) VALUES (?, ?)');
+const purgeOldPasswordResetSends = database.prepare('DELETE FROM password_reset_sends WHERE sent_at < ?');
 
 function readLegacyData() {
   const row = readDatabase.get();
@@ -749,7 +772,7 @@ function migrateCanonicalEmails() {
       console.warn(`Uyarı: e-posta göçü çakışması çözülemedi (${canonical}). Hesaplar değiştirilmeden bırakıldı ve sunucu açılıyor: ${redact(error.message)}`);
     }
   }
-  for (const [table, idColumn] of [['pending_registrations', 'id'], ['verification_sends', 'id']]) {
+  for (const [table, idColumn] of [['pending_registrations', 'id'], ['verification_sends', 'id'], ['password_reset_sends', 'id']]) {
     const rows = database.prepare(`SELECT ${idColumn} AS id, email FROM ${table}`).all();
     const update = database.prepare(`UPDATE ${table} SET email = ? WHERE ${idColumn} = ?`);
     for (const row of rows) {
@@ -1119,6 +1142,35 @@ async function sendVerificationEmail(email, code) {
     subject: 'Turnuva hesabı e-posta doğrulama kodu',
     text: `E-posta doğrulama kodunuz: ${code}\nKod 10 dakika geçerlidir.`,
     html: `<p>E-posta doğrulama kodunuz:</p><p style="font-size:28px;font-weight:bold;letter-spacing:6px">${code}</p><p>Kod 10 dakika geçerlidir.</p>`
+  });
+}
+
+function configuredAppBaseUrl() {
+  const raw = String(process.env.APP_BASE_URL || '').trim().replace(/\/+$/, '');
+  if (!raw) return '';
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return '';
+  }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
+  if (isHosted() && parsed.protocol !== 'https:') return '';
+  return raw;
+}
+
+const forgotPasswordReceipt = {
+  ok: true,
+  message: 'E-posta adresin sistemde varsa şifre sıfırlama bağlantısı gönderildi.'
+};
+
+async function sendPasswordResetEmail(email, token, baseUrl) {
+  const link = `${baseUrl}/?reset=${encodeURIComponent(token)}`;
+  await sendMail({
+    to: email,
+    subject: 'Omni şifre sıfırlama',
+    text: `Şifreni sıfırlamak için bu bağlantıyı aç:\n${link}\n\nBağlantı 30 dakika geçerlidir ve tek kullanımlıktır. Bu isteği sen yapmadıysan bu iletiyi yok say.`,
+    html: `<p>Şifreni sıfırlamak için bu bağlantıyı aç:</p><p><a href="${link}">${link}</a></p><p>Bağlantı 30 dakika geçerlidir ve tek kullanımlıktır. Bu isteği sen yapmadıysan bu iletiyi yok say.</p>`
   });
 }
 
@@ -1593,7 +1645,9 @@ async function handleAuthRequest(request, response, pathname) {
   const limits = {
     '/api/auth/register': [5, 15 * 60 * 1000],
     '/api/auth/login': [10, 15 * 60 * 1000],
-    '/api/auth/logout': [20, 15 * 60 * 1000]
+    '/api/auth/logout': [20, 15 * 60 * 1000],
+    '/api/auth/forgot-password': [5, 15 * 60 * 1000],
+    '/api/auth/reset-password': [10, 15 * 60 * 1000]
   }[pathname];
   if (request.method === 'POST' && limits && !enforceRateLimit(request, response, pathname, limits[0], limits[1])) return;
 
@@ -1856,6 +1910,79 @@ async function handleAuthRequest(request, response, pathname) {
     sendJson(response, 200, { ok: true });
     return;
   }
+
+  if (request.method === 'POST' && pathname === '/api/auth/forgot-password') {
+    const body = await readJsonBody(request, response, requestBodyLimit(pathname, null));
+    if (!body) return;
+    const email = canonicalEmail(body.email);
+    const baseUrl = configuredAppBaseUrl();
+    const stored = validEmail(email)
+      ? database.prepare('SELECT id, email, verified FROM users WHERE email = ? COLLATE NOCASE').get(email)
+      : null;
+    if (stored?.verified && mailConfigured() && baseUrl) {
+      const now = Date.now();
+      purgeOldPasswordResetSends.run(now - 60 * 60 * 1000);
+      const hourly = Number(passwordResetSendCounts.get(now - 60 * 60 * 1000, stored.email)?.hourly || 0);
+      if (hourly < maxPasswordResetEmailsPerHour) {
+        purgeExpiredPasswordResetTokens.run(now);
+        const token = crypto.randomBytes(32).toString('base64url');
+        const tokenHash = hashToken(token);
+        deletePasswordResetTokensForUser.run(stored.id);
+        insertPasswordResetToken.run(tokenHash, stored.id, now + passwordResetLifetime);
+        insertPasswordResetSend.run(stored.email, now);
+        sendPasswordResetEmail(stored.email, token, baseUrl).catch(() => {
+          deletePasswordResetToken.run(tokenHash);
+        });
+      }
+    }
+    sendJson(response, 200, forgotPasswordReceipt);
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/auth/reset-password') {
+    const body = await readJsonBody(request, response, requestBodyLimit(pathname, null));
+    if (!body) return;
+    const token = typeof body.token === 'string' ? body.token.trim() : '';
+    const password = typeof body.password === 'string' ? body.password : '';
+    const confirmation = typeof body.confirmation === 'string' ? body.confirmation : '';
+    if (password.length < 8 || password.length > 128) {
+      sendJson(response, 400, { ok: false, error: 'Şifre en az 8, en fazla 128 karakter olmalı' });
+      return;
+    }
+    if (password !== confirmation) {
+      sendJson(response, 400, { ok: false, error: 'Şifre ve şifre onayı aynı olmalı' });
+      return;
+    }
+    const tokenHash = token ? hashToken(token) : '';
+    const existing = tokenHash ? readPasswordResetToken.get(tokenHash) : null;
+    if (!existing || existing.expires_at <= Date.now()) {
+      if (existing) deletePasswordResetToken.run(existing.token_hash);
+      sendJson(response, 400, { ok: false, error: 'Bağlantı geçersiz veya süresi dolmuş' });
+      return;
+    }
+    const salt = crypto.randomBytes(16);
+    const passwordHash = await runScrypt(password, salt, clientAddress(request));
+    database.exec('BEGIN IMMEDIATE');
+    try {
+      const current = readPasswordResetToken.get(tokenHash);
+      if (!current || current.expires_at <= Date.now()) {
+        database.exec('ROLLBACK');
+        sendJson(response, 400, { ok: false, error: 'Bağlantı geçersiz veya süresi dolmuş' });
+        return;
+      }
+      updateUserPassword.run(passwordHash.toString('hex'), salt.toString('hex'), current.user_id);
+      deletePasswordResetTokensForUser.run(current.user_id);
+      deleteUserSessions.run(current.user_id);
+      database.exec('COMMIT');
+    } catch (error) {
+      try { database.exec('ROLLBACK'); } catch {}
+      throw error;
+    }
+    clearSessionCookie(response, request);
+    sendJson(response, 200, { ok: true, message: 'Şifren güncellendi. Yeni şifrenle giriş yapabilirsin.' });
+    return;
+  }
+
   sendJson(response, 404, { ok: false, error: 'API bulunamadı' });
 }
 

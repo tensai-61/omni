@@ -469,6 +469,7 @@
           <div class="form-group"><label for="loginEmail" data-i18n="email">E-posta</label><input id="loginEmail" name="email" type="email" autocomplete="email" required maxlength="254"></div>
           <div class="form-group"><label for="loginPassword" data-i18n="password">Şifre</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required maxlength="128"></div>
           <button class="btn btn-primary" style="width:100%" type="submit" data-i18n="login">Giriş Yap</button>
+          <p class="auth-note" style="margin-top:.75rem;text-align:center"><button class="btn btn-secondary" type="button" onclick="setAuthMode('forgot')" data-i18n="forgotPassword">Şifremi unuttum</button></p>
         </form>
         <form id="pendingTwoFactorForm" class="hidden" onsubmit="finishPendingTwoFactor(event)">
           <p class="auth-description" data-i18n="twoFactorLoginHint">Şifre doğru. Uygulamadaki kodu veya bir yedek kodu gir.</p>
@@ -483,6 +484,17 @@
           <div class="form-group"><label for="registerConfirmation" data-i18n="passwordConfirm">Şifre Onaylama</label><input id="registerConfirmation" name="confirmation" type="password" autocomplete="new-password" required minlength="8" maxlength="128"></div>
           <p class="auth-note" data-i18n="passwordHint">Şifre en az 8 karakter olmalı; şifre ve onayı aynı olmalı.</p>
           <button class="btn btn-primary" style="width:100%" type="submit" data-i18n="register">Hesap Oluştur</button>
+        </form>
+        <form id="forgotForm" class="hidden" onsubmit="requestPasswordReset(event)">
+          <div class="form-group"><label for="forgotEmail" data-i18n="email">E-posta</label><input id="forgotEmail" name="email" type="email" autocomplete="email" required maxlength="254"></div>
+          <p class="auth-note" data-i18n="forgotPasswordHint">Adres sistemde varsa bağlantı birkaç dakika içinde gelir.</p>
+          <button class="btn btn-primary" style="width:100%" type="submit" data-i18n="forgotPasswordSubmit">Sıfırlama bağlantısı gönder</button>
+        </form>
+        <form id="resetForm" class="hidden" onsubmit="submitPasswordReset(event)">
+          <div class="form-group"><label for="resetPassword" data-i18n="password">Şifre</label><input id="resetPassword" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128"></div>
+          <div class="form-group"><label for="resetConfirmation" data-i18n="passwordConfirm">Şifre Onaylama</label><input id="resetConfirmation" name="confirmation" type="password" autocomplete="new-password" required minlength="8" maxlength="128"></div>
+          <p class="auth-note" data-i18n="passwordHint">Şifre en az 8 karakter olmalı; şifre ve onayı aynı olmalı.</p>
+          <button class="btn btn-primary" style="width:100%" type="submit" data-i18n="resetPasswordSubmit">Şifreyi güncelle</button>
         </form>
         <form id="verificationForm" class="hidden" onsubmit="verifyAccount(event)">
           <p class="auth-description"><strong id="verificationEmail"></strong> <span data-i18n="verifySent">adresine gönderilen 6 haneli kodu gir.</span></p>
@@ -1147,6 +1159,7 @@
     }
     let currentLang='tr';
     let authMode='login';
+    let pendingResetToken='';
     function t(key){
       const pack=(typeof I18N!=='undefined'&&I18N[currentLang])||{};
       const fallback=(typeof I18N!=='undefined'&&I18N.tr)||{};
@@ -2040,6 +2053,8 @@
       if(!title||!desc)return;
       const verifying=document.getElementById('verificationForm')&&!document.getElementById('verificationForm').classList.contains('hidden');
       if(verifying){title.textContent=t('verifyTitle');desc.textContent=t('verifyDesc');return;}
+      if(authMode==='forgot'){title.textContent=t('forgotPasswordTitle');desc.textContent=t('forgotPasswordDesc');return;}
+      if(authMode==='reset'){title.textContent=t('resetPasswordTitle');desc.textContent=t('resetPasswordDesc');return;}
       title.textContent=authMode==='register'?t('register'):t('login');
       desc.textContent=authMode==='register'?t('registerDesc'):t('loginDesc');
     }
@@ -2113,10 +2128,13 @@
       const seasonStart=getLocalDateString(new Date());
       document.getElementById('tSeasonDates').value=`${seasonStart} – ${getSeasonEndDate(seasonStart)}`;
       await loadPublicPackages();
+      const resetToken=params.get('reset');
       try{
         const session=await apiRequest('/api/auth/session');
+        if(resetToken){showResetView(resetToken);return;}
         if(session.user)await enterAuthenticatedApp(session.user);
       }catch(error){
+        if(resetToken){showResetView(resetToken);return;}
         if(error.banned)showBanLock(error);
         else showAuthView(error.message||t('serverDown'));
       }
@@ -2215,17 +2233,65 @@
     }
 
     function setAuthMode(mode){
-      authMode=mode==='register'?'register':'login';
+      authMode=['register','forgot','reset'].includes(mode)?mode:'login';
+      if(authMode!=='reset')pendingResetToken='';
       document.getElementById('authError').innerText='';
       document.getElementById('loginForm').classList.toggle('hidden',authMode!=='login');
       document.getElementById('registerForm').classList.toggle('hidden',authMode!=='register');
+      document.getElementById('forgotForm').classList.toggle('hidden',authMode!=='forgot');
+      document.getElementById('resetForm').classList.toggle('hidden',authMode!=='reset');
       document.getElementById('verificationForm').classList.add('hidden');
+      document.getElementById('pendingTwoFactorForm').classList.add('hidden');
       pendingVerificationEmail='';
       pendingVerificationPassword='';
-      document.getElementById('authModeActions').classList.remove('hidden');
-      document.getElementById('showRegisterBtn').classList.toggle('hidden',authMode!=='login');
-      document.getElementById('showLoginBtn').classList.toggle('hidden',authMode!=='register');
+      document.getElementById('authModeActions').classList.toggle('hidden',authMode==='reset');
+      document.getElementById('showRegisterBtn').classList.toggle('hidden',authMode!=='login'&&authMode!=='forgot');
+      document.getElementById('showLoginBtn').classList.toggle('hidden',authMode==='login');
       refreshAuthCopy();
+    }
+
+    function showResetView(token){
+      pendingResetToken=typeof token==='string'?token:'';
+      if(window.history&&history.replaceState){
+        const url=new URL(location.href);
+        url.searchParams.delete('reset');
+        history.replaceState({},'',url.pathname+url.search+url.hash);
+      }
+      setAuthMode('reset');
+      pendingResetToken=typeof token==='string'?token:'';
+      const passwordInput=document.getElementById('resetPassword');
+      const confirmInput=document.getElementById('resetConfirmation');
+      if(passwordInput)passwordInput.value='';
+      if(confirmInput)confirmInput.value='';
+    }
+
+    async function requestPasswordReset(event){
+      event.preventDefault();
+      const email=document.getElementById('forgotEmail').value.trim();
+      try{
+        const result=await apiRequest('/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+        document.getElementById('authError').innerText=result.message||t('forgotPasswordSent');
+      }catch(error){document.getElementById('authError').innerText=error.message;}
+    }
+
+    async function submitPasswordReset(event){
+      event.preventDefault();
+      const password=document.getElementById('resetPassword').value;
+      const confirmation=document.getElementById('resetConfirmation').value;
+      if(password!==confirmation){
+        document.getElementById('authError').innerText=t('passwordMismatch');
+        return;
+      }
+      try{
+        const result=await apiRequest('/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:pendingResetToken,password,confirmation})});
+        if(window.history&&history.replaceState){
+          const url=new URL(location.href);
+          url.searchParams.delete('reset');
+          history.replaceState({},'',url.pathname+url.search+url.hash);
+        }
+        setAuthMode('login');
+        document.getElementById('authError').innerText=result.message||t('resetPasswordDone');
+      }catch(error){document.getElementById('authError').innerText=error.message;}
     }
 
     function updateAccountHeader(){
@@ -2388,6 +2454,8 @@
       document.getElementById('authError').innerText='';
       document.getElementById('loginForm').classList.add('hidden');
       document.getElementById('registerForm').classList.add('hidden');
+      document.getElementById('forgotForm').classList.add('hidden');
+      document.getElementById('resetForm').classList.add('hidden');
       document.getElementById('verificationForm').classList.remove('hidden');
       document.getElementById('authModeActions').classList.add('hidden');
       document.getElementById('verificationCode').value='';
@@ -2435,6 +2503,8 @@
     function showPendingTwoFactor(){
       document.getElementById('loginForm').classList.add('hidden');
       document.getElementById('registerForm').classList.add('hidden');
+      document.getElementById('forgotForm').classList.add('hidden');
+      document.getElementById('resetForm').classList.add('hidden');
       document.getElementById('pendingTwoFactorForm').classList.remove('hidden');
       document.getElementById('authError').innerText='';
     }

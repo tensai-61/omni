@@ -33,6 +33,7 @@ Turso ücretsiz planda her `COMMIT` için yedek tutar ve son **1 gün** içinde 
 | `TURSO_DATABASE_URL` | Turso’nun verdiği `libsql://` adresi |
 | `TURSO_AUTH_TOKEN` | Yalnızca bu veritabanına bağlı yeni jeton |
 | `SESSION_SECRET` | Yeni üretin: `openssl rand -hex 32`. Eski bir parolayı, eski veritabanındaki sırrı veya SMTP parolasını tekrar kullanmayın. |
+| `APP_BASE_URL` | Sitenin kök adresi, şifre sıfırlama bağlantısında kullanılır. `https://` ile yazın, sonda `/` olmasın. Örnek biçim: `https://ornek.adres`. Yanlış bir adres bağlantıyı başka yere götürür. |
 | `TOTP_ENC_KEY` | 2FA sırrı ve yedek kodları için ayrı anahtar. `openssl rand -hex 32`. En az 32 karakter. `SESSION_SECRET` ile aynı olmasın; oturum sırrını değiştirmek 2FA’yı bozmasın. Üretimde boşsa süreç açılmaz. |
 | `ADMIN_EMAIL` | İlk yönetici adresi. Şema açılırken bu adresli hesap bir kez Admin olarak yazılır. Sonraki rütbe değişiklikleri yalnızca rütbe tablosundan gelir. |
 | `BREVO_API_KEY` | Brevo transactional API anahtarı. Doluysa bütün postalar HTTPS ile Brevo’ya gider. Değeri repoya, sohbete veya günlüğe yazmayın. |
@@ -50,7 +51,7 @@ Turso ücretsiz planda her `COMMIT` için yedek tutar ve son **1 gün** içinde 
 
 `PORT` değerini Render kendisi verir. Elle sabitlemeyin.
 
-Render’ın ücretsiz planı dışarı giden SMTP kapılarını (25, 465 ve 587) engeller. Bu kapılara bağlanan posta gönderimi üretimde zaman aşımına düşer. Üretim postası için Brevo kullanın: ücretsiz planda günde 300 mektup vardır ve istek `https://api.brevo.com/v3/smtp/email` adresine HTTPS (kapı 443) ile gider. Gönderen, Brevo’da doğrulanmış adres olmalıdır (örnek: `noreply@example.com`). `BREVO_API_KEY` doluysa doğrulama kodu, kayıt ve diğer bütün postalar bu ortak gönderim yolundan Brevo’ya gider. Anahtar boşsa mevcut SMTP yolu, yerel geliştirmede olduğu gibi, aynen çalışır.
+Render’ın ücretsiz planı dışarı giden SMTP kapılarını (25, 465 ve 587) engeller. Bu kapılara bağlanan posta gönderimi üretimde zaman aşımına düşer. Üretim postası için Brevo kullanın: ücretsiz planda günde 300 mektup vardır ve istek `https://api.brevo.com/v3/smtp/email` adresine HTTPS (kapı 443) ile gider. Gönderen, Brevo’da doğrulanmış adres olmalıdır (örnek: `noreply@example.com`). `BREVO_API_KEY` doluysa doğrulama kodu, kayıt, şifre sıfırlama ve diğer bütün postalar bu ortak gönderim yolundan Brevo’ya gider. Şifre sıfırlama bağlantısı `APP_BASE_URL` değerinden üretilir; bu ayar boşsa veya geçersizse mektup gönderilmez (istek yine genel cevap döner). Anahtar boşsa mevcut SMTP yolu, yerel geliştirmede olduğu gibi, aynen çalışır.
 
 Eksik üretim ayarı varsa süreç açılışta durur ve günlükte yalnızca eksik **adları** yazar. Adres, jeton, Brevo API anahtarı, SMTP parolası ve oturum sırrı günlüğe yazılmaz.
 
@@ -76,7 +77,7 @@ Tarihi, dönmek istediğiniz anla değiştirin. Sonra bu yeni veritabanı için 
 
 `BACKUP_PASSPHRASE` yeni bir parola olsun: `openssl rand -hex 32`. Eski parola, SMTP parolası veya `SESSION_SECRET` ile aynı olmasın. Değeri yalnızca özel ortamlarda (özel deponun secret'ları gibi) tutulur. Komut satırına, sohbete veya günlüğe yazmayın. Betikler parolayı `BACKUP_PASSPHRASE` ortam değişkeninden okur; argüman olarak vermeyin.
 
-Dökümde `user_sessions`, `verification_codes`, `pending_registrations`, `verification_sends`, `app_secrets` ve `totp_key` yoktur. Geri yüklemede bu tabloların şeması boş kurulur. Oturumlar, bekleyen doğrulama kodları, uygulama sırrı ve 2FA anahtarı geri gelmez. Üretimdeki `SESSION_SECRET` ve `TOTP_ENC_KEY` ortamda durur.
+Dökümde `user_sessions`, `verification_codes`, `pending_registrations`, `verification_sends`, `password_reset_tokens`, `password_reset_sends`, `app_secrets` ve `totp_key` yoktur. Geri yüklemede bu tabloların şeması boş kurulur. Oturumlar, bekleyen doğrulama ve şifre sıfırlama kodları, uygulama sırrı ve 2FA anahtarı geri gelmez. Üretimdeki `SESSION_SECRET` ve `TOTP_ENC_KEY` ortamda durur.
 
 İndirdiğiniz `.enc` dosyasını yeni bir yerel veritabanına açmak için ortamda parolayı tanımlayıp:
 

@@ -110,6 +110,8 @@ test('uploaded backup is encrypted and omits sessions, verification, and app sec
     );
     CREATE TABLE verification_sends (id INTEGER PRIMARY KEY, email TEXT NOT NULL, sent_at INTEGER NOT NULL);
     CREATE TABLE user_sessions (token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL, expires_at INTEGER NOT NULL);
+    CREATE TABLE password_reset_tokens (token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL, expires_at INTEGER NOT NULL);
+    CREATE TABLE password_reset_sends (id INTEGER PRIMARY KEY, email TEXT NOT NULL, sent_at INTEGER NOT NULL);
     INSERT INTO users (id, email) VALUES (1, 'oyuncu@example.com');
     INSERT INTO user_balances (user_id, coins, omni_dolar) VALUES (1, 3, 4);
     INSERT INTO app_secrets (id, secret) VALUES (1, 'app-secret-row-value');
@@ -120,6 +122,8 @@ test('uploaded backup is encrypted and omits sessions, verification, and app sec
       VALUES (1, 'pending@example.com', 'pending-secret-row', 'pending-code-secret-row');
     INSERT INTO verification_sends (id, email, sent_at) VALUES (1, 'verify-send-secret@example.com', 1);
     INSERT INTO user_sessions (token_hash, user_id, expires_at) VALUES ('session-secret-row-token', 1, 1);
+    INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES ('reset-secret-row-token', 1, 1);
+    INSERT INTO password_reset_sends (id, email, sent_at) VALUES (1, 'reset-send-secret@example.com', 1);
   `);
   database.close();
   const exported = await run(['scripts/export-backup.js', '--file', source, '--out', dump]);
@@ -133,7 +137,9 @@ test('uploaded backup is encrypted and omits sessions, verification, and app sec
     'pending-secret-row',
     'pending-code-secret-row',
     'verify-send-secret@example.com',
-    'session-secret-row-token'
+    'session-secret-row-token',
+    'reset-secret-row-token',
+    'reset-send-secret@example.com'
   ]) {
     assert.equal(sql.includes(secret), false, secret);
   }

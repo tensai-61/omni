@@ -1,10 +1,6 @@
 # KVKK Aydınlatma Metni (Omni / Omni.verse)
 
-> **TASLAK — yayından önce avukat onayı gerekir.**
->
-> Bu metin, 11 Kasım 2026 itibarıyla `github.com/tensai-61/Turnuva-Yapma-Program` deposunun `main` dalındaki koda ve henüz birleşmemiş oyuncu pazarı çalışmasına (PR #12) dayanır. Köşeli parantezdeki alanlar şirket bilgisiyle doldurulmadan ve avukat incelemesi olmadan yayımlanmamalıdır.
-
-**Son güncelleme:** [TARİH]
+**Son güncelleme:** 19 Kasım 2026
 
 ## 1. Veri sorumlusu
 
@@ -14,7 +10,7 @@
 
 - Adres: **[ADRES]**
 - KEP / e-posta: **[KEP/E-POSTA]**
-- İnternet sitesi: **[İNTERNET SİTESİ]**
+- İnternet sitesi: **https://omni-turnuva-lig.onrender.com**
 
 bu metinde “WTS Studios”, “biz” veya “uygulama” olarak anılır.
 
@@ -22,83 +18,91 @@ bu metinde “WTS Studios”, “biz” veya “uygulama” olarak anılır.
 
 Uygulama yalnızca hesap açmanız, hizmeti kullanmanız ve (varsa) havale ile paket siparişi vermeniz için gereken verileri işler. Kimlik belgesi, doğum tarihi, telefon numarası veya açık adres toplanmaz.
 
+Hizmet 13 yaşını doldurmuş kullanıcılara yöneliktir. 13 yaşından küçükler kayıt olamaz. 13–18 yaş aralığındaki kullanıcılar hizmeti veli veya vasilerinin bilgisiyle kullanmalıdır.
+
 | Kategori | Örnek veriler |
 | --- | --- |
-| Kimlik / hesap | Kullanıcı adı, hesap rolü (oyuncu, yönetici, modder), kayıt tarihi, doğrulama durumu |
+| Kimlik / hesap | Kullanıcı adı, hesap rolü (oyuncu, yönetici, moderatör), kayıt tarihi, doğrulama durumu |
 | İletişim | E-posta adresi |
-| Güvenlik | Parolanın özeti ve tuzu (parolanın kendisi saklanmaz), e-posta doğrulama kodunun özeti, oturum belirtecinin özeti, cihaz kimliği (`deviceId`), ban kayıtları (neden, not, tür, süre, cihaz yasağı) |
+| Güvenlik | Parolanın özeti ve tuzu (parolanın kendisi saklanmaz), e-posta doğrulama ve parola sıfırlama kodu / bağlantı özetleri, oturum belirtecinin özeti, isteğe bağlı iki adımlı doğrulama (TOTP) sırrı ve yedek kodlar, cihaz kimliği, ban kayıtları (neden, not, tür, süre, cihaz yasağı) |
 | Görsel | İsteğe bağlı profil fotoğrafı (en fazla 512 KB, tarayıcıda üretilen görüntü verisi) |
 | Kullanım / oyun | Çevrimdışı turnuva ve takım kayıtlarınız, kadro ve ilk 11 seçimi, lig üyelikleri, fikstür ve maç sonuçları, paket açımları, sanal oyuncu kartları, sanal bakiye ve para defteri (Coin / Ⓞ Dolar; gerçek para değildir) |
-| Pazar (PR #12 ile yayımlanması planlanır) | Omni Market ve oyuncu pazarı ilanları ile sanal para satış kayıtları (alıcı / satıcı hesap kimliği, kart, fiyat, tarih) |
+| Pazar | Omni Market ve oyuncu pazarı ilanları ile sanal para satış kayıtları (alıcı / satıcı hesap kimliği, kart, fiyat, tarih) |
 | Sipariş | Havale ile paket siparişi verildiğinde sipariş kalemi, tutar, para birimi, referans kodu, durum ve inceleme tarihi. Kullanıcının kendi IBAN’ı alınmaz; gösterilen IBAN şirket / alıcı hesabına aittir |
 | Konum (yalnızca tarayıcıda) | Tema önerisi için tarayıcının isteyebileceği anlık konum; bu koordinatlar sunucuya gönderilmez ve veritabanına yazılmaz |
-| Teknik (geçici) | İstek IP adresi, hız sınırı ve doğrulama denemeleri — uygulama veritabanına yazılmaz, sunucu belleğinde kısa süre tutulur. Barındırma açıldığında erişim günlüklerinde IP görünebilir |
-| Çerez ve yerel depolama | Aşağıdaki [Çerez Politikası](./cerez-politikasi.md) tablosundaki anahtarlar |
+| Teknik (geçici) | İstek IP adresi, hız sınırı ve doğrulama denemeleri — uygulama veritabanına yazılmaz, sunucu belleğinde kısa süre tutulur. Barındırma sağlayıcısının erişim günlüklerinde IP görünebilir |
+| Çerez ve yerel depolama | [Çerez Politikası](./cerez-politikasi.md) tablosundaki birinci taraf kayıtlar (oturum çerezi ve tarayıcıdaki yerel depolama) |
 
 ## 3. İşleme amaçları
 
 Kişisel verileriniz şu amaçlarla işlenir:
 
-- Hesap oluşturmak, e-posta ile doğrulamak, oturum açmak ve kapatmak
-- Online lig, maç simülasyonu, paket mağazası, sanal ekonomi ve (yayımlanırsa) pazar hizmetlerini sunmak
+- Hesap oluşturmak, e-posta ile doğrulamak, oturum açmak ve kapatmak, parolayı sıfırlamak
+- Online lig, maç simülasyonu, paket mağazası, sanal ekonomi ve pazar hizmetlerini sunmak
 - Profilinizi (kullanıcı adı, isteğe bağlı fotoğraf) ve tercihlerinizi (dil, tema) yönetmek
 - Çevrimdışı turnuva / takım verilerinizi hesabınıza kaydetmek
-- Güvenliği sağlamak: parola doğrulama, hız sınırı, cihaz yasağı, geçici veya kalıcı ban, yönetici şifre yeniden doğrulaması
+- Güvenliği sağlamak: parola doğrulama, iki adımlı doğrulama, hız sınırı, cihaz yasağı, geçici veya kalıcı ban, yönetici şifre yeniden doğrulaması
 - Havale siparişi oluşursa siparişi kaydetmek, referans kodu üretmek ve ödemeyi onaylamak veya reddetmek
 - Kullanıcılar arası oyunda kullanıcı adını, fotoğrafı, lig üyeliğini ve maç sonuçlarını diğer oyunculara göstermek
 - Yasal yükümlülükleri yerine getirmek ve hak taleplerini karşılamak
-- KVKK m.11 kapsamındaki başvurularınızı cevaplamak
+- KVKK m. 11 kapsamındaki başvurularınızı cevaplamak
 
 Pazarlama iletisi veya profilleme reklamı bugün gönderilmez. Bu amaç sonradan eklenirse ayrıca açık rıza alınır.
 
-**Hiper paketi** (gerçek para birimi ile satılması planlanan paket) kodda satışa kapalıdır. Gerçek para ile satış başlarsa bu metin güncellenir; fiyat bu taslakta yer almaz.
+**Hiper paketi** (gerçek para birimi ile satılması öngörülen paket) satışa kapalıdır. Gerçek para ile satış başlarsa bu metin güncellenir.
 
-## 4. Hukuki sebepler (KVKK m.5)
+## 4. Hukuki sebepler (KVKK m. 5)
 
 | Hukuki sebep | Örnek işlemler |
 | --- | --- |
-| **m.5/2-c** — Bir sözleşmenin kurulması veya ifası | Kayıt, giriş, lig, maç, paket, sanal bakiye, hesap verilerinin saklanması |
-| **m.5/2-ç** — Hukuki yükümlülük | Tutulması gereken ticari / mali kayıtlar (havale siparişleri devreye girerse), resmi başvurular |
-| **m.5/2-e** — Bir hakkın tesisi, kullanılması veya korunması | Ban ve itiraz kayıtları, değiştirilemeyen maç ve defter kayıtları, uyuşmazlık |
-| **m.5/2-f** — Meşru menfaat (temel hak ve özgürlüklerinize zarar vermemek kaydıyla) | IP üzerinden hız sınırı, oturum güvenliği, kötüye kullanımı önleme, günlükler |
-| **m.5/1** — Açık rıza | Zorunlu olmayan çerez / yerel depolama, konum ile tema önerisi, ileride eklenebilecek analitik, robot doğrulama (captcha) veya pazarlama |
+| **m. 5/2-c** — Bir sözleşmenin kurulması veya ifası | Kayıt, giriş, e-posta doğrulama, parola sıfırlama, lig, maç, paket, pazar, sanal bakiye, oturum çerezi, hesap verilerinin saklanması |
+| **m. 5/2-ç** — Hukuki yükümlülük | Tutulması gereken ticari / mali kayıtlar (havale siparişleri), 5651 sayılı Kanun kapsamındaki erişim kayıtları, resmi başvurular |
+| **m. 5/2-e** — Bir hakkın tesisi, kullanılması veya korunması | Ban ve itiraz kayıtları, değiştirilemeyen maç ve defter kayıtları, uyuşmazlık |
+| **m. 5/2-f** — Meşru menfaat (temel hak ve özgürlüklerinize zarar vermemek kaydıyla) | IP üzerinden hız sınırı, oturum ve cihaz güvenliği, kötüye kullanımı önleme, günlükler |
+| **m. 5/1** — Açık rıza | Konum ile tema önerisi (tarayıcınızın izin penceresi), ileride eklenebilecek pazarlama iletileri |
 
-Parola özeti, oturum ve doğrulama kodu özetleri güvenlik amacıyla; profil fotoğrafı verdiğiniz ölçüde sözleşme ifası ve sizin fiili davranışınızla işlenir.
+Parola özeti, oturum, doğrulama ve parola sıfırlama kodu özetleri ile (açıksa) iki adımlı doğrulama verileri güvenlik amacıyla; profil fotoğrafı verdiğiniz ölçüde sözleşme ifası ve sizin fiili davranışınızla işlenir.
 
 ## 5. Toplama yöntemi
 
 Veriler doğrudan sizden, elektronik ortamda toplanır:
 
-- Kayıt, doğrulama, giriş ve profil formları
+- Kayıt, doğrulama, giriş, parola sıfırlama ve profil formları
 - Uygulama içi işlemleriniz (lig, maç, paket, sipariş, pazar)
-- Tarayıcınıza yazılan çerez ve `localStorage` anahtarları
+- Tarayıcınıza yazılan çerez ve `localStorage` kayıtları
 - Tarayıcınızın (izin verirseniz) konum API’si — yalnızca cihazınızda tema seçmek için
 - Sunucunun gördüğü IP ve istek başlıkları (hız sınırı ve güvenli çerez ayarı)
 
 Üçüncü kişilerden kredi skorı, reklam profili veya dış liste alınmaz.
 
-## 6. Aktarım ve yurt dışı aktarım (KVKK m.9)
+## 6. Aktarım ve yurt dışı aktarım (KVKK m. 9)
 
 Verileriniz, yukarıdaki amaçlarla sınırlı olmak üzere şu alıcılara aktarılabilir:
 
-| Alıcı | Rol | Durum (kod, 11 Kasım 2026) |
+| Alıcı | Rol | Açıklama |
 | --- | --- | --- |
-| WTS Studios yetkili yöneticileri / görevlileri | Hesap, ban, sipariş ve güvenlik yönetimi | Mevcut (yönetici e-postası ortam değişkeniyle tanımlanır) |
-| E-posta altyapısı (SMTP; ileride Resend planlanır) | Doğrulama kodu gönderimi | Mevcut: Nodemailer + `SMTP_*` / `EMAIL_FROM`. Resend henüz kodda yoktur |
-| Turso (bulut veritabanı, AWS Frankfurt planlanır) | Hesap ve oyun verilerinin barındırılması | Planlanır; `main` dalında veritabanı yerel SQLite dosyasıdır (`node:sqlite`) |
-| Render | Uygulama sunucusunun barındırılması | Planlanır; bölge yayından önce netleştirilecektir (ABD veya başka bir bölge olabilir) |
-| Robot doğrulama (captcha) sağlayıcısı | Kayıt / girişte bot engeli | Planlanır; henüz kodda yoktur |
+| WTS Studios yetkili yöneticileri / görevlileri | Hesap, ban, sipariş ve güvenlik yönetimi | Yönetici e-postası ortam ayarıyla tanımlanır |
+| Brevo (Sendinblue SAS) | İşlemsel e-posta gönderimi | Doğrulama kodu ve parola sıfırlama iletileri, HTTPS API (`https://api.brevo.com`) üzerinden gönderilir |
+| Turso | Hesap ve oyun verilerinin barındırılması | Veritabanı AWS eu-central-1 (Frankfurt, Almanya) bölgesindedir |
+| Render | Uygulama sunucusunun barındırılması | Sunucu Frankfurt, Almanya bölgesindedir |
 | Yetkili kamu kurumları | Kanunen zorunlu haller | İhtiyaç olursa |
 
-**Yurt dışı aktarım:** Turso’nun Frankfurt bölgesi Avrupa’dadır. Render, SMTP / Resend veya captcha sağlayıcısının sunucuları Avrupa Ekonomik Alanı veya Türkiye dışında (örneğin ABD) olabilir. Bu aktarımlar KVKK m.9’a uygun olarak, yeterli korumanın bulunduğu ülke, Kurul’un uygun bulduğu güvence (standart sözleşme maddeleri vb.) veya kanunda sayılan diğer hallerden biri tamamlanmadan canlıya alınmamalıdır. Sağlayıcı sözleşme ve KVKK uyum metinleri ([işleme envanterindeki boşluklar](./veri-envanteri.md)) yayından önce doldurulacaktır.
+**Yurt dışı aktarım:** Render ve Turso Almanya’da (Avrupa Birliği) barındırılır. Brevo, Fransa merkezli Sendinblue SAS tarafından işletilir; işlemsel e-posta gönderimi Avrupa Birliği içinde bir aktarım doğurabilir. Bu aktarımlar Türkiye dışına yapıldığından KVKK m. 9 kapsamındadır.
 
 Diğer oyuncular yalnızca herkese açık oyun bilgilerinizi görür: kullanıcı adı, profil fotoğrafı, lig üyeliği, fikstür ve maç sonucu. E-posta adresi diğer oyunculara gösterilmez.
 
 ## 7. Saklama
 
-Ayrıntılı süreler [Gizlilik Politikası](./gizlilik-politikasi.md) içindedir. Özetle: doğrulanmamış kayıt ve bekleyen kayıtlar 24 saat sonra silinir; doğrulama kodu 10 dakika geçerlidir; oturum 30 gündür; doğrulanmış hesap ve oyun kayıtları hesabınız durduğu sürece (ve yasal saklama gereken sipariş / defter kayıtları ilgili süre boyunca) tutulur.
+Ayrıntılı süreler [Gizlilik Politikası](./gizlilik-politikasi.md) içindedir. Özetle:
 
-## 8. KVKK m.11 kapsamındaki haklarınız
+- Doğrulanmamış kayıt ve bekleyen kayıtlar 24 saat sonra silinir
+- Doğrulama kodu 10 dakika, parola sıfırlama bağlantısı 30 dakika geçerlidir
+- Oturum 30 gündür
+- Doğrulanmış hesap ve oyun kayıtları, silme talebinize veya hesabın kapatılmasına kadar tutulur; silme ve veri indirme talepleri **[KEP/E-POSTA]** üzerinden alınır ve KVKK m. 13 uyarınca kural olarak 30 gün içinde sonuçlandırılır
+- Havale siparişleri ve tutulması gereken ticari / mali kayıtlar 10 yıl saklanır
+- 5651 sayılı Kanun kapsamındaki trafik / erişim kayıtları 2 yıl, uygulama günlükleri 90 gün saklanır
+
+## 8. KVKK m. 11 kapsamındaki haklarınız
 
 Kanun’un 11. maddesi uyarınca veri sorumlusuna başvurarak:
 
@@ -107,14 +111,14 @@ Kanun’un 11. maddesi uyarınca veri sorumlusuna başvurarak:
 - İşleme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme
 - Yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme
 - Eksik veya yanlış işlenmişse düzeltilmesini isteme
-- m.7’deki şartlar çerçevesinde silinmesini veya yok edilmesini isteme
+- m. 7’deki şartlar çerçevesinde silinmesini veya yok edilmesini isteme
 - Düzeltme / silme işlemlerinin, verilerin aktarıldığı üçüncü kişilere bildirilmesini isteme
 - İşlenen verilerin münhasıran otomatik sistemler ile analiz edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme
 - Kanuna aykırı işleme nedeniyle zarara uğramanız hâlinde zararın giderilmesini talep etme
 
 haklarına sahipsiniz.
 
-**Kod notu (yayından önce giderilmelidir):** Bugün uygulamada doğrulanmış hesap için otomatik “hesabımı sil” veya “verilerimi indir” uç noktası yoktur. Bu talepler aşağıdaki başvuru yoluyla elle karşılanır; silme ve dışa aktarma işlevi koda eklenene kadar başvurular [KEP/E-POSTA] üzerinden işlenir.
+Hesap silme ve verilerinizin bir kopyasını indirme talepleriniz aşağıdaki başvuru yoluyla iletilir ve KVKK m. 13 uyarınca kural olarak 30 gün içinde sonuçlandırılır.
 
 ## 9. Başvuru yolu
 
@@ -129,4 +133,4 @@ Başvurular kural olarak 30 gün içinde ücretsiz sonuçlandırılır. İşlemi
 
 Cevabı yeterli bulmazsanız, cevabı öğrendiğiniz tarihten itibaren 30 gün ve her hâlde başvuru tarihinden itibaren 60 gün içinde **Kişisel Verileri Koruma Kurulu**’na şikâyette bulunabilirsiniz.
 
-Bu metnin güncel sürümü uygulama içinde ve **[İNTERNET SİTESİ]** adresinde yayımlanır. Çerezler için ayrıca [Çerez Politikası](./cerez-politikasi.md), saklama ve güvenlik ayrıntıları için [Gizlilik Politikası](./gizlilik-politikasi.md) geçerlidir.
+Bu metnin güncel sürümü uygulama içinde ve **https://omni-turnuva-lig.onrender.com** adresinde yayımlanır. Çerezler için ayrıca [Çerez Politikası](./cerez-politikasi.md), saklama ve güvenlik ayrıntıları için [Gizlilik Politikası](./gizlilik-politikasi.md) geçerlidir.

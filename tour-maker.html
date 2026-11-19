@@ -495,6 +495,10 @@
             <input id="registerKvkk" name="kvkkAccepted" type="checkbox" required>
             <label for="registerKvkk"><span data-i18n="kvkkConsent">Aydınlatma Metni'ni okudum</span> (<a href="/kvkk" target="_blank" rel="noopener noreferrer" data-i18n="legalKvkk">Aydınlatma Metni</a>)</label>
           </div>
+          <div class="form-group legal-consent">
+            <input id="registerAge" name="ageConfirmed" type="checkbox" required>
+            <label for="registerAge"><span data-i18n="ageConsent">13 yaşından büyüğüm</span></label>
+          </div>
           <p class="auth-note legal-links">
             <a href="/kvkk" data-i18n="legalKvkk">Aydınlatma Metni</a>
             <a href="/gizlilik" data-i18n="legalPrivacy">Gizlilik Politikası</a>
@@ -2498,13 +2502,18 @@
         return;
       }
       const kvkkAccepted=document.getElementById('registerKvkk').checked;
+      const ageConfirmed=document.getElementById('registerAge').checked;
       if(!kvkkAccepted){
         document.getElementById('authError').innerText=t('kvkkRequired');
         return;
       }
+      if(!ageConfirmed){
+        document.getElementById('authError').innerText=t('ageRequired');
+        return;
+      }
       try{
         const avatarData=await readAvatarInput(document.getElementById('registerAvatar'));
-        const result=await apiRequest('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password,confirmation,avatarData,deviceId:getDeviceId(),kvkkAccepted:true})});
+        const result=await apiRequest('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password,confirmation,avatarData,deviceId:getDeviceId(),kvkkAccepted:true,ageConfirmed:true})});
         showVerificationView(result.email, password);
       }catch(error){document.getElementById('authError').innerText=error.message;}
     }

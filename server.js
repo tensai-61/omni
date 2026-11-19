@@ -21,6 +21,7 @@ const {
 const { assertRuntimeConfig, isHosted } = require('./lib/config');
 const { openDatabase } = require('./lib/db');
 const { redact } = require('./lib/redact');
+const { legalPages } = require('./lib/legal');
 const {
   installOnlineSchema,
   seedFreeTeams,
@@ -1685,6 +1686,11 @@ async function handleAuthRequest(request, response, pathname) {
       sendJson(response, 400, { ok: false, error: 'Şifre ve şifre onayı aynı olmalı' });
       return;
     }
+    const kvkkAccepted = body.kvkkAccepted === true || body.kvkkAccepted === 'true' || body.kvkkAccepted === 'on' || body.kvkkAccepted === 1 || body.kvkkAccepted === '1';
+    if (!kvkkAccepted) {
+      sendJson(response, 400, { ok: false, error: "Kayıt için Aydınlatma Metni'ni okuduğunuzu onaylamanız gerekir" });
+      return;
+    }
     if (!mailConfigured()) {
       sendJson(response, 503, { ok: false, error: 'E-posta gönderimi şu an kullanılamıyor. Daha sonra tekrar dene.' });
       return;
@@ -2716,6 +2722,15 @@ const server = http.createServer(async (request, response) => {
         'Cache-Control': 'public, max-age=86400',
         'X-Content-Type-Options': 'nosniff'
       }, path.join(root, 'brand'));
+      return;
+    }
+    if (request.method === 'GET' && legalPages[pathname]) {
+      response.writeHead(200, {
+        ...securityHeaders(),
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; frame-src 'none'"
+      });
+      response.end(legalPages[pathname]);
       return;
     }
     if (request.method === 'GET' && (pathname === '/' || pathname === '/tour-maker.html')) {

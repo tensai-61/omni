@@ -368,6 +368,14 @@
     .player-pick.listed-lock{pointer-events:none}
     .market-band{margin:.35rem 0 0}
     @media(max-width:760px){.mode-grid,.online-grid,.team-pick-grid,.xi-grid,.pack-grid,.club-grid,.reveal-grid{grid-template-columns:1fr}.mode-logo{height:72px}.online-head{align-items:flex-start}.header-actions{width:100%}.balance-bar{width:100%;justify-content:flex-end}.online-league-bar{align-items:flex-start;flex-direction:column}}
+    .legal-consent{display:flex;align-items:flex-start;gap:.65rem}
+    .legal-consent input{width:auto;margin-top:.25rem}
+    .legal-consent label{margin:0;color:var(--text-muted);font-size:.86rem;line-height:1.45}
+    .legal-consent a,.legal-links a,.site-footer a{color:var(--primary)}
+    .legal-links{display:flex;flex-wrap:wrap;gap:.35rem 1rem;margin:.2rem 0 1rem;font-size:.82rem}
+    .site-footer{margin-top:auto;padding:1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom,0));display:flex;flex-wrap:wrap;justify-content:center;gap:1rem;border-top:1px solid var(--border);font-size:.82rem;background:color-mix(in srgb,var(--bg-card) 82%,transparent)}
+    .site-footer a{color:var(--text-muted);text-decoration:none}
+    .site-footer a:hover{color:var(--primary);text-decoration:underline}
   </style>
   <script>
     try {
@@ -483,6 +491,19 @@
           <div class="form-group"><label for="registerPassword" data-i18n="password">Şifre</label><input id="registerPassword" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128"></div>
           <div class="form-group"><label for="registerConfirmation" data-i18n="passwordConfirm">Şifre Onaylama</label><input id="registerConfirmation" name="confirmation" type="password" autocomplete="new-password" required minlength="8" maxlength="128"></div>
           <p class="auth-note" data-i18n="passwordHint">Şifre en az 8 karakter olmalı; şifre ve onayı aynı olmalı.</p>
+          <div class="form-group legal-consent">
+            <input id="registerKvkk" name="kvkkAccepted" type="checkbox" required>
+            <label for="registerKvkk"><span data-i18n="kvkkConsent">Aydınlatma Metni'ni okudum</span> (<a href="/kvkk" target="_blank" rel="noopener noreferrer" data-i18n="legalKvkk">Aydınlatma Metni</a>)</label>
+          </div>
+          <div class="form-group legal-consent">
+            <input id="registerAge" name="ageConfirmed" type="checkbox" required>
+            <label for="registerAge"><span data-i18n="ageConsent">13 yaşından büyüğüm</span></label>
+          </div>
+          <p class="auth-note legal-links">
+            <a href="/kvkk" data-i18n="legalKvkk">Aydınlatma Metni</a>
+            <a href="/gizlilik" data-i18n="legalPrivacy">Gizlilik Politikası</a>
+            <a href="/cerez" data-i18n="legalCookies">Çerez Politikası</a>
+          </p>
           <button class="btn btn-primary" style="width:100%" type="submit" data-i18n="register">Hesap Oluştur</button>
         </form>
         <form id="forgotForm" class="hidden" onsubmit="requestPasswordReset(event)">
@@ -1089,6 +1110,11 @@
     </div>
   </div>
   <div id="toastContainer"></div>
+  <footer class="site-footer">
+    <a href="/kvkk" data-i18n="legalKvkk">Aydınlatma Metni</a>
+    <a href="/gizlilik" data-i18n="legalPrivacy">Gizlilik Politikası</a>
+    <a href="/cerez" data-i18n="legalCookies">Çerez Politikası</a>
+  </footer>
 
   <script src="/locale.js"></script>
   <script>
@@ -2475,9 +2501,19 @@
         document.getElementById('authError').innerText=t('passwordMismatch');
         return;
       }
+      const kvkkAccepted=document.getElementById('registerKvkk').checked;
+      const ageConfirmed=document.getElementById('registerAge').checked;
+      if(!kvkkAccepted){
+        document.getElementById('authError').innerText=t('kvkkRequired');
+        return;
+      }
+      if(!ageConfirmed){
+        document.getElementById('authError').innerText=t('ageRequired');
+        return;
+      }
       try{
         const avatarData=await readAvatarInput(document.getElementById('registerAvatar'));
-        const result=await apiRequest('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password,confirmation,avatarData,deviceId:getDeviceId()})});
+        const result=await apiRequest('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password,confirmation,avatarData,deviceId:getDeviceId(),kvkkAccepted:true,ageConfirmed:true})});
         showVerificationView(result.email, password);
       }catch(error){document.getElementById('authError').innerText=error.message;}
     }

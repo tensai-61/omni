@@ -21,6 +21,7 @@ const {
 const { assertRuntimeConfig, isHosted } = require('./lib/config');
 const { openDatabase } = require('./lib/db');
 const { redact } = require('./lib/redact');
+const { legalPages, KVKK_VERSION } = require('./lib/legal');
 const {
   installOnlineSchema,
   seedFreeTeams,
@@ -106,7 +107,9 @@ database.exec(`
     bannedUntil TEXT,
     deviceId TEXT,
     isDeviceBanned INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    kvkk_accepted_at TEXT,
+    kvkk_version TEXT
   );
   CREATE TABLE IF NOT EXISTS verification_codes (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -247,6 +250,12 @@ if (!userColumns.has('isDeviceBanned')) {
 if (!userColumns.has('role')) {
   database.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
 }
+if (!userColumns.has('kvkk_accepted_at')) {
+  database.exec('ALTER TABLE users ADD COLUMN kvkk_accepted_at TEXT');
+}
+if (!userColumns.has('kvkk_version')) {
+  database.exec('ALTER TABLE users ADD COLUMN kvkk_version TEXT');
+}
 installRanks(database, adminEmail);
 
 const packageColumns = new Set(database.prepare('PRAGMA table_info(packages)').all().map(column => column.name));
@@ -297,8 +306,9 @@ const totpKey = resolveTotpKey();
 
 const readDatabase = database.prepare('SELECT payload FROM app_data WHERE id = 1');
 const readUser = database.prepare('SELECT id, email, username, avatar_data, verified FROM users WHERE email = ? COLLATE NOCASE');
-const insertUnverifiedUser = database.prepare("INSERT INTO users (email, username, avatar_data, password_hash, password_salt, verified, role, deviceId, created_at) VALUES (?, ?, ?, ?, ?, 0, 'user', ?, ?)");
-const insertVerifiedUser = database.prepare("INSERT INTO users (email, username, avatar_data, password_hash, password_salt, verified, role, deviceId, created_at) VALUES (?, ?, ?, ?, ?, 1, 'user', ?, ?)");
+const insertUnverifiedUser = database.prepare("INSERT INTO users (email, username, avatar_data, password_hash, password_salt, verified, role, deviceId, created_at, kvkk_accepted_at, kvkk_version) VALUES (?, ?, ?, ?, ?, 0, 'user', ?, ?, ?, ?)");
+const insertVerifiedUser = database.prepare("INSERT INTO users (email, username, avatar_data, password_hash, password_salt, verified, role, deviceId, created_at, kvkk_accepted_at, kvkk_version) VALUES (?, ?, ?, ?, ?, 1, 'user', ?, ?, ?, ?)");
+const updateUnverifiedKvkk = database.prepare('UPDATE users SET kvkk_accepted_at = ?, kvkk_version = ? WHERE id = ? AND verified = 0');
 const applyPendingRegistration = database.prepare(`
   UPDATE users
   SET username = ?, avatar_data = ?, password_hash = ?, password_salt = ?, deviceId = ?, verified = 1
@@ -1573,9 +1583,10 @@ function claimPendingRegistration(pending, deviceId) {
     }
     let userId;
     if (!current) {
+      const now = new Date().toISOString();
       const result = insertVerifiedUser.run(
         pending.email, pending.username, pending.avatar_data, pending.password_hash, pending.password_salt,
-        chosenDevice, new Date().toISOString()
+        chosenDevice, now, now, KVKK_VERSION
       );
       userId = Number(result.lastInsertRowid);
     } else {
@@ -1685,6 +1696,17 @@ async function handleAuthRequest(request, response, pathname) {
       sendJson(response, 400, { ok: false, error: 'Şifre ve şifre onayı aynı olmalı' });
       return;
     }
+    const acceptedFlag = value => value === true || value === 'true' || value === 'on' || value === 1 || value === '1';
+    const kvkkAccepted = acceptedFlag(body.kvkkAccepted);
+    if (!kvkkAccepted) {
+      sendJson(response, 400, { ok: false, error: "Kayıt için Aydınlatma Metni'ni okuduğunuzu onaylamanız gerekir" });
+      return;
+    }
+    const ageConfirmed = acceptedFlag(body.ageConfirmed);
+    if (!ageConfirmed) {
+      sendJson(response, 400, { ok: false, error: 'Kayıt için 13 yaşından büyük olduğunuzu onaylamanız gerekir' });
+      return;
+    }
     if (!mailConfigured()) {
       sendJson(response, 503, { ok: false, error: 'E-posta gönderimi şu an kullanılamıyor. Daha sonra tekrar dene.' });
       return;
@@ -1715,7 +1737,7 @@ async function handleAuthRequest(request, response, pathname) {
     let createdUserId = 0;
     if (!existingBefore) {
       try {
-        const result = insertUnverifiedUser.run(email, username, avatarData, passwordHashHex, saltHex, deviceId || null, createdAt);
+        const result = insertUnverifiedUser.run(email, username, avatarData, passwordHashHex, saltHex, deviceId || null, createdAt, createdAt, KVKK_VERSION);
         createdUserId = Number(result.lastInsertRowid);
       } catch (error) {
         if (isUniqueConstraintError(error)) {
@@ -1753,6 +1775,9 @@ async function handleAuthRequest(request, response, pathname) {
         sendJson(response, 500, { ok: false, error: 'Hesap oluşturulamadı' });
       }
       return;
+    }
+    if (existingBefore && !existingBefore.verified) {
+      updateUnverifiedKvkk.run(createdAt, KVKK_VERSION, existingBefore.id);
     }
     sendJson(response, 201, { ok: true, verificationRequired: true, email });
     return;
@@ -2716,6 +2741,15 @@ const server = http.createServer(async (request, response) => {
         'Cache-Control': 'public, max-age=86400',
         'X-Content-Type-Options': 'nosniff'
       }, path.join(root, 'brand'));
+      return;
+    }
+    if (request.method === 'GET' && legalPages[pathname]) {
+      response.writeHead(200, {
+        ...securityHeaders(),
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; frame-src 'none'"
+      });
+      response.end(legalPages[pathname]);
       return;
     }
     if (request.method === 'GET' && (pathname === '/' || pathname === '/tour-maker.html')) {

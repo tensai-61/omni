@@ -6,10 +6,10 @@
 
 6698 sayılı Kişisel Verilerin Korunması Kanunu (“**KVKK**”) uyarınca, Omni (Omni.verse) çevrimiçi futbol turnuvası ve lig uygulamasında işlenen kişisel verilerinizin veri sorumlusu:
 
-**[ŞİRKET UNVANI]** (işletme adı: **WTS Studios**)
+**WTS STUDIOS** (işletme adı: **WTS Studios**)
 
-- Adres: **[ADRES]**
-- KEP / e-posta: **[KEP/E-POSTA]**
+- Adres: **Bursa/Yıldırım**
+- KEP / e-posta: **wts.studios01@gmail.com**
 - İnternet sitesi: **https://omni-turnuva-lig.onrender.com**
 
 bu metinde “WTS Studios”, “biz” veya “uygulama” olarak anılır.
@@ -98,7 +98,7 @@ Ayrıntılı süreler [Gizlilik Politikası](./gizlilik-politikasi.md) içindedi
 - Doğrulanmamış kayıt ve bekleyen kayıtlar 24 saat sonra silinir
 - Doğrulama kodu 10 dakika, parola sıfırlama bağlantısı 30 dakika geçerlidir
 - Oturum 30 gündür
-- Doğrulanmış hesap ve oyun kayıtları, silme talebinize veya hesabın kapatılmasına kadar tutulur; silme ve veri indirme talepleri **[KEP/E-POSTA]** üzerinden alınır ve KVKK m. 13 uyarınca kural olarak 30 gün içinde sonuçlandırılır
+- Doğrulanmış hesap ve oyun kayıtları, silme talebinize veya hesabın kapatılmasına kadar tutulur; silme ve veri indirme talepleri **wts.studios01@gmail.com** üzerinden alınır ve KVKK m. 13 uyarınca kural olarak 30 gün içinde sonuçlandırılır
 - Havale siparişleri ve tutulması gereken ticari / mali kayıtlar 10 yıl saklanır
 - 5651 sayılı Kanun kapsamındaki trafik / erişim kayıtları 2 yıl, uygulama günlükleri 90 gün saklanır
 
@@ -124,8 +124,8 @@ Hesap silme ve verilerinizin bir kopyasını indirme talepleriniz aşağıdaki b
 
 Başvurularınızı, 30.03.2016 tarihli ve 29677 sayılı Resmî Gazete’de yayımlanan *Veri Sorumlusuna Başvuru Usul ve Esasları Hakkında Tebliğ*’e uygun olarak:
 
-- KEP veya e-posta: **[KEP/E-POSTA]**
-- Yazılı: **[ADRES]**
+- KEP veya e-posta: **wts.studios01@gmail.com**
+- Yazılı: **Bursa/Yıldırım**
 
 adresine iletebilirsiniz. Başvuruda ad-soyad, T.C. kimlik numarası (veya yabancılar için uyruğunuz ve pasaport / kimlik numarası), tebligata esas yerleşim yeri veya iş yeri adresi, varsa KEP / e-posta, talep konusu ve kimliği tevsik edici belgeler bulunmalıdır.
 

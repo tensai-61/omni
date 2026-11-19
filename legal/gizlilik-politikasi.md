@@ -4,7 +4,7 @@
 
 ## 1. Kapsam
 
-Bu politika, WTS Studios’un (**[ŞİRKET UNVANI]**, **[ADRES]**) işlettiği Omni (Omni.verse) web uygulamasında kişisel verilerin nasıl saklandığını, korunduğunu ve çocuklara ilişkin yaklaşımı anlatır. KVKK aydınlatma yükümlülüğünün asıl metni [Aydınlatma Metni](./aydinlatma-metni.md)’dir.
+Bu politika, WTS Studios’un (**WTS STUDIOS**, **Bursa/Yıldırım**) işlettiği Omni (Omni.verse) web uygulamasında kişisel verilerin nasıl saklandığını, korunduğunu ve çocuklara ilişkin yaklaşımı anlatır. KVKK aydınlatma yükümlülüğünün asıl metni [Aydınlatma Metni](./aydinlatma-metni.md)’dir.
 
 Hizmet, Render üzerinde Frankfurt (Almanya) bölgesinde barındırılan bir web uygulamasıdır. Hesap ve oyun verileri Turso veritabanında, AWS eu-central-1 (Frankfurt, Almanya) bölgesinde tutulur.
 
@@ -79,7 +79,7 @@ Konum bilgisi tema önerisi için yalnızca tarayıcınızda işlenir, sunucuya 
 
 ## 7. Haklarınız ve başvuru
 
-KVKK m. 11 hakları ve başvuru yolu Aydınlatma Metni’nin 8. ve 9. bölümlerindedir: **[KEP/E-POSTA]**, **[ADRES]**.
+KVKK m. 11 hakları ve başvuru yolu Aydınlatma Metni’nin 8. ve 9. bölümlerindedir: **wts.studios01@gmail.com**, **Bursa/Yıldırım**.
 
 Hesap silme ve verilerinizi indirme talepleriniz bu kanallardan iletilir ve KVKK m. 13 uyarınca kural olarak 30 gün içinde sonuçlandırılır.
 

@@ -1,7 +1,7 @@
 # Çerez Politikası (Omni / Omni.verse)
 
 **Son güncelleme:** 19 Kasım 2026  
-Veri sorumlusu: **[ŞİRKET UNVANI]** (WTS Studios) — **[ADRES]** — **[KEP/E-POSTA]**
+Veri sorumlusu: **WTS STUDIOS** (WTS Studios) — **Bursa/Yıldırım** — **wts.studios01@gmail.com**
 
 ## 1. Çerez ve benzeri teknolojiler
 

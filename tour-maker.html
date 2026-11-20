@@ -2088,10 +2088,12 @@
       const value=localStorage.getItem('omniverse_theme')||'';
       return BRANDS[value]?value:'';
     }
-    function detectBrand(){
+    function detectBrand(askLocation){
       const chosen=chosenTheme();
       if(chosen){applyBrand(chosen);return;}
       applyBrand('verse');
+      // Konum izni yalnızca kullanıcı temada "konuma bağlı" seçeneğini seçtiyse istenir.
+      if(!askLocation&&localStorage.getItem('omniverse_theme_auto')!=='1')return;
       if(!navigator.geolocation)return;
       navigator.geolocation.getCurrentPosition(position=>{
         if(chosenTheme())return;
@@ -2108,9 +2110,8 @@
       document.getElementById('settingsModal').classList.add('hidden');
     }
     function chooseTheme(key){
-      if(key==='auto')localStorage.removeItem('omniverse_theme');
-      else if(BRANDS[key])localStorage.setItem('omniverse_theme',key);
-      detectBrand();
+      if(key==='auto'){localStorage.removeItem('omniverse_theme');localStorage.setItem('omniverse_theme_auto','1');detectBrand(true);}
+      else if(BRANDS[key]){localStorage.setItem('omniverse_theme',key);localStorage.removeItem('omniverse_theme_auto');detectBrand();}
       renderSettingsChoices();
     }
     function chooseLanguage(lang){
